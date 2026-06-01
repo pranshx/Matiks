@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matiks · A Point of View</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0a;
+  --green: #AAFF00;
+  --green-dim: rgba(170,255,0,0.1);
+  --green-mid: rgba(170,255,0,0.22);
+  --green-glow: rgba(170,255,0,0.06);
+  --white: #f0f0f0;
+  --muted: rgba(240,240,240,0.45);
+  --faint: rgba(240,240,240,0.2);
+  --card: rgba(255,255,255,0.035);
+  --border: rgba(170,255,0,0.18);
+  --border-dim: rgba(255,255,255,0.06);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(170,255,0,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170,255,0,0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow {
+  position: fixed;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--green-glow) 0%, transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+  transition: top 1s ease, left 1s ease;
+  transform: translate(-50%, -50%);
+}
+
+#progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: var(--green);
+  z-index: 20;
+  transition: width 0.45s ease;
+  box-shadow: 0 0 8px var(--green);
+}
+
+.key-hint {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.5rem;
+  font-size: 0.68rem;
+  color: var(--faint);
+  letter-spacing: 0.06em;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* SLIDES */
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.slide-inner {
+  max-width: 620px;
+  width: 100%;
+}
+
+/* animated children */
+.a1, .a2, .a3, .a4, .a5 {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.slide.active .a1 { opacity: 1; transform: translateY(0); transition-delay: 0.08s; }
+.slide.active .a2 { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
+.slide.active .a3 { opacity: 1; transform: translateY(0); transition-delay: 0.32s; }
+.slide.active .a4 { opacity: 1; transform: translateY(0); transition-delay: 0.44s; }
+.slide.active .a5 { opacity: 1; transform: translateY(0); transition-delay: 0.56s; }
+
+.scale-in {
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 0.5s ease 0.2s, transform 0.5s cubic-bezier(0.34,1.4,0.64,1) 0.2s;
+}
+.slide.active .scale-in { opacity: 1; transform: scale(1); }
+
+/* TYPOGRAPHY */
+.chapter {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--green);
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+.headline {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  color: var(--white);
+  margin-bottom: 1.25rem;
+}
+
+.headline .g { color: var(--green); }
+
+.body-text {
+  font-size: 1rem;
+  line-height: 1.78;
+  color: rgba(240,240,240,0.72);
+  font-weight: 300;
+  margin-bottom: 1.5rem;
+}
+
+/* SLIDE 0 specific */
+.provoke {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.6rem, 4.5vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 1.5rem;
+}
+
+.provoke .g { color: var(--green); }
+.provoke .dim { color: rgba(240,240,240,0.35); }
+
+.sub-line {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: rgba(240,240,240,0.65);
+  font-weight: 300;
+  margin-bottom: 0;
+}
+
+/* SLIDE 1: defeat */
+.defeat-tag {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,90,90,0.85);
+  border: 1px solid rgba(255,90,90,0.25);
+  border-radius: 4px;
+  padding: 3px 10px;
+  margin-bottom: 1.25rem;
+}
+
+.score-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.score-block { display: flex; flex-direction: column; }
+
+.score-num {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(3.5rem, 10vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-num.lose { color: rgba(240,240,240,0.22); }
+.score-num.win  { color: var(--green); }
+
+.score-name {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 5px;
+  letter-spacing: 0.03em;
+}
+
+.score-dash {
+  font-size: 1.2rem;
+  color: var(--faint);
+  padding-bottom: 1.2rem;
+}
+
+.rating-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255,80,80,0.07);
+  border: 1px solid rgba(255,80,80,0.18);
+  border-radius: 6px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+  color: rgba(255,120,120,0.85);
+  margin-bottom: 1.5rem;
+}
+
+/* SLIDE 2: problem */
+.phase-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.phase-card {
+  background: var(--card);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+}
+
+.phase-card.lit {
+  border-color: var(--border);
+  background: rgba(170,255,0,0.04);
+}
+
+.phase-tag-sm {
+  font-size: 8.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.phase-card.lit .phase-tag-sm { color: var(--green); }
+
+.phase-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(240,240,240,0.25);
+  margin-bottom: 0.4rem;
+}
+
+.phase-card.lit .phase-title { color: var(--white); }
+
+.phase-body {
+  font-size: 0.76rem;
+  color: rgba(240,240,240,0.25);
+  line-height: 1.65;
+}
+
+.phase-card.lit .phase-body { color: var(--muted); }
+
+.reframe {
+  background: var(--green-dim);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.88rem;
+  color: var(--white);
+  line-height: 1.6;
+}
+
+.reframe span { color: var(--green); font-weight: 500; }
+
+/* SLIDE 3: evidence */
+.ev-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.ev-card {
+  background: var(--card);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  transition: border-color 0.2s;
+}
+
+.ev-card:hover { border-color: var(--border); }
+
+.ev-source {
+  font-size: 8.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.ev-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 0.35rem;
+  line-height: 1.25;
+}
+
+.ev-body {
+  font-size: 0.73rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.ev-bottom {
+  font-size: 0.88rem;
+  color: rgba(240,240,240,0.6);
+  line-height: 1.7;
+  font-weight: 300;
+  font-style: italic;
+}
+
+/* SLIDE 4: thesis */
+.thesis-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0;
+}
+
+.t-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid var(--border-dim);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  transition: border-color 0.2s;
+}
+
+.t-item:hover { border-color: var(--border); }
+
+.t-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--green);
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.t-title {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--white);
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.t-body {
+  font-size: 0.77rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* SLIDE 5: ask */
+.ask-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.2rem, 6vw, 3.8rem);
+  color: var(--white);
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+
+.ask-role {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1.75rem;
+}
+
+.ask-body {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: rgba(240,240,240,0.7);
+  font-weight: 300;
+  margin-bottom: 1.75rem;
+}
+
+.ask-body strong {
+  color: var(--white);
+  font-weight: 500;
+}
+
+.ask-close {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+.link-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.ask-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--green-dim);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  color: var(--green);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ask-link:hover { background: var(--green-mid); }
+
+/* NAV */
+#nav {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  z-index: 10;
+}
+
+.dots { display: flex; gap: 5px; align-items: center; }
+
+.dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(240,240,240,0.18);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dot.active {
+  background: var(--green);
+  width: 18px;
+  border-radius: 3px;
+  box-shadow: 0 0 6px var(--green);
+}
+
+.nav-btn {
+  background: none;
+  border: 1px solid rgba(240,240,240,0.12);
+  border-radius: 50%;
+  width: 38px; height: 38px;
+  color: var(--white);
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+.nav-btn:disabled { opacity: 0.18; cursor: default; }
+
+#hint {
+  position: fixed;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: var(--faint);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.4s ease;
+}
+
+#hint.gone { opacity: 0; }
+
+@media (max-width: 600px) {
+  .slide { padding: 1.25rem 1rem; justify-content: flex-start; padding-top: 3.5rem; }
+  .slide-inner { max-width: 100%; }
+  .provoke { font-size: 1.7rem; }
+  .headline { font-size: 1.8rem; }
+  .ev-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+  .phase-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+  .score-num { font-size: 3rem; }
+  .ask-name { font-size: 2.2rem; }
+  .t-item { padding: 0.75rem 0.9rem; }
+  .link-row { flex-direction: column; }
+  .ask-link { width: 100%; justify-content: center; }
+  .icard { padding: 0.75rem; }
+  .body-text { font-size: 0.92rem; }
+  .sub-line { font-size: 0.92rem; }
+  .ask-body { font-size: 0.92rem; }
+  #nav { bottom: 1.25rem; }
+  #hint { bottom: 4.5rem; }
+  .key-hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="glow" id="glow"></div>
+<div id="progress"></div>
+<div class="key-hint">← → to navigate</div>
+<div id="hint">click anywhere · arrow keys</div>
+
+<div id="app">
+
+  <!-- SLIDE 0: PROVOCATION -->
+  <div class="slide active" id="slide-0">
+    <div class="slide-inner">
+      <div class="chapter a1">A point of view on Matiks</div>
+      <div class="provoke a2">
+        Matiks got me in <span class="g">60 seconds.</span><br>
+        The duel rush is real.<br>
+        <span class="dim">But there's a gap between that rush and the first rupee.</span>
+      </div>
+      <div class="sub-line a3">
+        Here's where it is.
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 1: THE OBSERVATION -->
+  <div class="slide" id="slide-1">
+    <div class="slide-inner">
+      <div class="chapter a1">The observation</div>
+      <div class="defeat-tag a2">Defeat</div>
+      <div class="score-row a3">
+        <div class="score-block">
+          <div class="score-num lose">23</div>
+          <div class="score-name">pranshu01 · 1020</div>
+        </div>
+        <div class="score-dash">·</div>
+        <div class="score-block">
+          <div class="score-num win">24</div>
+          <div class="score-name">kartavyasisodiy · 1037</div>
+        </div>
+      </div>
+      <div class="rating-pill a4">▼ &nbsp;1022 → 1020 &nbsp;·&nbsp; lost by one question</div>
+      <div class="body-text a5">
+        One question difference. A real person beat me. My rating dropped.<br>
+        And I felt absolutely nothing about that number.<br><br>
+        The duel rush was real. The loss stung. But the rating · the number that's supposed to mean everything in a competitive platform · carried zero weight. No context. No rank name. No percentile. Just a number sitting there.
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: THE PROBLEM -->
+  <div class="slide" id="slide-2">
+    <div class="slide-inner">
+      <div class="chapter a1">The problem</div>
+      <div class="headline a2">The number exists.<br>The <span class="g">meaning</span> doesn't.</div>
+      <div class="phase-grid a3">
+        <div class="phase-card">
+          <div class="phase-tag-sm">Day 0 to 30</div>
+          <div class="phase-title">Nothing to lose</div>
+          <div class="phase-body">No streak worth protecting. No rating with context. No social circle on the platform. No identity built around being a Matiks player. Pie means nothing here.</div>
+        </div>
+        <div class="phase-card lit">
+          <div class="phase-tag-sm">Day 30+</div>
+          <div class="phase-title">Everything to protect</div>
+          <div class="phase-body">Streak exists. Rating has context from repeated play. League rivals. Identity formed. Now Pie has emotional weight. Monetization can actually work.</div>
+        </div>
+      </div>
+      <div class="reframe a4">
+        Matiks' monetization problem is actually an <span>activation problem in disguise.</span> You can't monetize until users have something worth protecting. The job is to compress 50 days into 7.
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: THE EVIDENCE -->
+  <div class="slide" id="slide-3">
+    <div class="slide-inner">
+      <div class="chapter a1">The evidence</div>
+      <div class="headline a2">What the <span class="g">best</span> figured out.</div>
+      <div class="ev-grid a3">
+        <div class="ev-card">
+          <div class="ev-source">Chess.com</div>
+          <div class="ev-title">The number is your face</div>
+          <div class="ev-body">Rating lives on your profile picture. Every rank has a name. The community decided what 1200 means. The number has social weight because they built meaning around it for years.</div>
+        </div>
+        <div class="ev-card">
+          <div class="ev-source">Clash Royale</div>
+          <div class="ev-title">Status is visible inside the app</div>
+          <div class="ev-body">Cosmetics, emotes, arena themes · none make you better. All make you look like someone worth noticing. Where there is social, people want status. They monetize identity, not gameplay.</div>
+        </div>
+        <div class="ev-card">
+          <div class="ev-source">Duolingo</div>
+          <div class="ev-title">Loss aversion converts</div>
+          <div class="ev-body">Question 9 of 10. One heart left. People don't pay to win · they pay to not lose what they've already built. The purchase happens at peak emotional investment.</div>
+        </div>
+      </div>
+      <div class="ev-bottom a4">
+        Matiks has a live opponent on the other side of the loss. That's more painful than failing a Duolingo lesson. The emotional leverage is stronger · it's just not being used yet.
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: THE THESIS -->
+  <div class="slide" id="slide-4">
+    <div class="slide-inner">
+      <div class="chapter a1">The thesis</div>
+      <div class="headline a2">Three unlocks.<br><span class="g">One insight.</span></div>
+      <div class="thesis-list a3">
+        <div class="t-item">
+          <div class="t-num">01</div>
+          <div>
+            <div class="t-title">Meaning layer · make the number matter on day one</div>
+            <div class="t-body">Show percentile. Name the ranks. Show proximity to next tier on the defeat screen. "1020 · Top 34% of Math Sprint players. 18 points to Silver." Now the -2 means something. Now the rematch button has a real reason.</div>
+          </div>
+        </div>
+        <div class="t-item">
+          <div class="t-num">02</div>
+          <div>
+            <div class="t-title">Cosmetic identity · make status visible inside the app</div>
+            <div class="t-body">A 365-day streak holder looks identical to a day-one user inside the app. Profile frames, rating badges, custom duel animations. The T-shirt lives in the physical world. Nothing lives in the digital one yet.</div>
+          </div>
+        </div>
+        <div class="t-item">
+          <div class="t-num">03</div>
+          <div>
+            <div class="t-title">Rating shield · monetize the loss aversion moment</div>
+            <div class="t-body">On a 3-game win streak. Rating climbing. Spend Pie before a high-stakes duel to protect your rating if you lose. You don't pay to win · you pay to not lose what you earned. Purchase at peak emotional investment.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: THE ASK -->
+  <div class="slide" id="slide-5">
+    <div class="slide-inner">
+      <div class="ask-name a2">Pransh Mittal</div>
+      <div class="ask-role a3">Fast-paced problem solver · Research Associate @ Ken Research</div>
+      <div class="ask-body a4">
+        Every day Matiks is <strong>building something, experimenting, learning at speed.</strong> New feature, new league, new market. The problem changes every week.<br><br>
+        That's the room I want to be in. I spot problems fast, I build fast, I ship fast. Give me something I haven't seen before and I'll figure it out.<br><br>
+        I've been watching Matiks do this from the outside for 4 months. I'd like to do it from the inside.
+      </div>
+      <div class="link-row a5">
+        <a class="ask-link" href="https://linkedin.com/in/pranshumittal01" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          linkedin.com/in/pranshumittal01
+        </a>
+        <a class="ask-link" href="https://pranshumittal.vercel.app" target="_blank">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          see the work
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nav-btn" id="prevBtn" onclick="navigate(-1)" disabled>←</button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" id="nextBtn" onclick="navigate(1)">→</button>
+</div>
+
+<script>
+const TOTAL = 5;
+let current = 0;
+let hintGone = false;
+
+const glow = document.getElementById('glow');
+const progress = document.getElementById('progress');
+const hint = document.getElementById('hint');
+const dotsEl = document.getElementById('dots');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+const glowPos = [
+  { top: '25%', left: '65%' },
+  { top: '55%', left: '30%' },
+  { top: '35%', left: '70%' },
+  { top: '60%', left: '45%' },
+  { top: '28%', left: '55%' },
+  { top: '50%', left: '50%' },
+];
+
+for (let i = 0; i < TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  if (n < 0 || n >= TOTAL) return;
+  document.getElementById('slide-' + current).classList.remove('active');
+  current = n;
+  document.getElementById('slide-' + current).classList.add('active');
+  progress.style.width = ((current + 1) / TOTAL * 100) + '%';
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === TOTAL - 1;
+  const p = glowPos[current];
+  glow.style.top = p.top;
+  glow.style.left = p.left;
+  if (!hintGone) { hintGone = true; hint.classList.add('gone'); }
+}
+
+function navigate(dir) { goTo(current + dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') navigate(1);
+  if (e.key === 'ArrowLeft') navigate(-1);
+});
+
+document.getElementById('app').addEventListener('click', e => {
+  if (e.target.closest('button, a, .ask-link, .dot, .nav-btn')) return;
+  navigate(1);
+});
+
+progress.style.width = (1 / TOTAL * 100) + '%';
+glow.style.top = glowPos[0].top;
+glow.style.left = glowPos[0].left;
+</script>
+</body>
+</html>
